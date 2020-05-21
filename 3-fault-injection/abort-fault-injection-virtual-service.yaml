@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: catalogue
+  namespace: sock-shop
+spec:
+  hosts:
+  - catalogue
+  http:
+  - fault:
+      abort:
+        httpStatus: 500
+        percentage:
+          value: 10
+    route:
+    - destination:
+        host: catalogue
+        subset: v1
