@@ -12,7 +12,12 @@ spec:
   - route:
     - destination:
         host: front-end
-        subset: v2
+        subset: v1
+      weight: 100
+    mirror:
+      host: front-end
+      subset: v2
+    mirror_percent: 100
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
@@ -22,6 +27,10 @@ metadata:
 spec:
   host: front-end
   subsets:
+  - name: v1
+    labels:
+      version: v1
+      name: front-end
   - name: v2
     labels:
       version: v2

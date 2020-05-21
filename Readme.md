@@ -76,3 +76,11 @@ For now we have v1 and v2 deployed in our clusters, we can forward all forward a
 ```
 $ kubectl apply -f 2-traffic-management/route-headers/frontv2-virtual-service-firefox.yaml
 ```
+#### 4. Mirroring
+Traffic mirroring, also called shadowing, is a powerful concept that allows feature teams to bring changes to production with as little risk as possible. Mirroring sends a copy of live traffic to a mirrored service. You can then send the traffic to out-of-band of the critical request path for the primary service (Content inspection, Threat monitoring, Troubleshooting)
+
+```
+$ kubectl apply -f 2-traffic-management/mirorring/mirror-v2.yaml 
+```
+This new rule sends 100% of the traffic to v1 while mirroring the same traffic to v2. you can check the logs of v1 and v2 pods to verify that logs created in v2 are the mirrored requests that are actually going to v1.
+
