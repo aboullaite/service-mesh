@@ -117,6 +117,23 @@ More complex load-balancing strategies such as consistent hash-based load balanc
 ```
 $ kubectl apply -f 3-resiliency/load-balancing/load-balancing-consistent-hash.yaml
 ```
+#### 3. Circuit Breaking
+Circuit breaking is a pattern of protecting calls (e.g., network calls to a remote service) behind a “circuit breaker.” If the protected call returns too many errors, we “trip” the circuit breaker and return errors to the caller without executing the protected call. 
+
+For example, we can configure circuit breaking rules for `catalogue` service and test the configuration by intentionally “tripping” the circuit breaker. To achieve this, we gonna use a simple load-testing client called [fortio](https://github.com/fortio/fortio). Fortio lets us control the number of connections, concurrency, and delays for outgoing HTTP calls. 
+```
+$ kubectl apply -f 3-resiliency/circuit-breaking/circuit-breaking.yaml 
+$ kubectl apply -f 3-resiliency/circuit-breaking/fortio.yaml 
+$ FORTIO_POD=$(kubectl get pod -n sock-shop| grep fortio | awk '{ print $1 }')  
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 4 -qps 0 -n 40 -loglevel Warning http://catalogue/tags
+```
+In the `DestinationRule` settings, we specified `maxConnections: 1` and `http1MaxPendingRequests: 1`. They indicate that if we exceed more than one connection and request concurrently, you should see some failures when the istio-proxy opens the circuit for further requests and connections. You should see something similar to this in the output:
+```
+Sockets used: 28 (for perfect keepalive, would be 4)
+Code 200 : 14 (35.0 %)
+Code 503 : 26 (65.0 %)
+```
+
 
 --- 
 Ressources:
