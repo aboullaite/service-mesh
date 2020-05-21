@@ -89,26 +89,37 @@ $ kubectl apply -f 2-traffic-management/mirorring/mirror-v2.yaml
 ```
 This new rule sends 100% of the traffic to v1 while mirroring the same traffic to v2. you can check the logs of v1 and v2 pods to verify that logs created in v2 are the mirrored requests that are actually going to v1.
 
-### 3. Fault injection
+### 3. Resiliency
+#### 1. Fault injection
 Fault injection is an incredibly powerful way to test and build reliable distributed applications.
 Istio allows you to configure faults for HTTP traffic, injecting arbitrary delays or returning specific response codes (e.g., 500) for some percentage of traffic.
-#### 1. Delay fault
+##### Delay fault
 In this example. we gonna inject a five-second delay for all traffic calling the `catalogue` service. This is a great way to reliably test how our frontend app behaves on a bad network.
 ```
-$ kubectl apply -f 3-fault-injection/delay-faults/delay-fault-injection-virtual-service.yaml
+$ kubectl apply -f 3-resiliency/fault-injection/delay-faults/delay-fault-injection-virtual-service.yaml
 ```
 Open the application and you can see that it takes now longer to render catalogs
-#### 2. Abort fault
+##### Abort fault
 Replying to clients with specific response codes, like a 429 or a 500, is also great for testing. For example, it can be challenging to programmatically test how your application behaves when a third-party service that it depends on begins to fail. Using Istio, you can write a set of reliable end-to-end tests of your application’s behavior in the presence of failures of its dependencies.
 
 For example, we can simulate 10% of requests to `catalogue` service is failing at runtime with a 500 response code.
 ```
-$ kubectl apply -f 3-fault-injection/delay-faults/abort-fault-injection-virtual-service.yaml 
+$ kubectl apply -f 3-resiliency/fault-injection/delay-faults/abort-fault-injection-virtual-service.yaml 
 $ open "http://$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')/catalogue"
 ```
 Refresh the page a couple of times. You'll notice that sometimes it doesn't return the json list of catalogs
 
---- Ressources:
+#### 2. Load-Balancing Strategy
+Client-side load balancing is an incredibly valuable tool for building resilient systems. By allowing clients to communicate directly with servers without going through reverse proxies, we remove points of failure while still keeping a well-behaved system.
+By default, Istio uses a round-robin load balancing policy, where each service instance in the instance pool gets a request in turn. Istio supports other options that you can check [here](https://istio.io/docs/concepts/traffic-management/#load-balancing-options)
+
+More complex load-balancing strategies such as consistent hash-based load balancing are also supported. In this example we set up sticky sessions for `catalogue` based on source IP address as the hash key.
+```
+$ kubectl apply -f 3-resiliency/load-balancing/load-balancing-consistent-hash.yaml
+```
+
+--- 
+Ressources:
 + [Istio documentation](https://istio.io/docs/t)
 + [Microservices demo](https://microservices-demo.github.io/)
 + [istio up and running](https://www.oreilly.com/library/view/istio-up-and/9781492043775/)
