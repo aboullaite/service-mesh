@@ -54,7 +54,7 @@ $ kubectl apply -f 2-traffic-management/canary/front-end-dep-v2.yaml
 ```
 now we have 2 versions of the front-end app running side by side. However if you hit the browser you'll have only the v1 (blue)
 
-1. Blue/Green Deployment
+#### 1. Blue/Green Deployment
 Blue-green deployment is a technique that reduces downtime and risk by running two identical production environments called Blue and Green.
 Now let's swicth to v1 (red) as live environment serving all production traffic. 
 ```
@@ -62,7 +62,7 @@ $ kubectl apply -f 2-traffic-management/blue-green/frontv2-virtual-service.yaml
 ```
 Now if you check the bapp, you'll see only the v2 (red version) of our application. Same way, you can rollback at any moment to the old version
 
-2. Canary deployment
+#### 2. Canary deployment
 Istio’s routing rules provides important advantages; you can easily control fine-grained traffic percentages (e.g., route 1% of traffic without requiring 100 pods) and you can control traffic using other criteria (e.g., route traffic for specific users to the canary version). To illustrate, let’s look at deploying the `front-end` service and see how simple to achieve canary deployment using istio.
 
 For that, we need to set a routing rule to control the traffic distribution by sending 20% of the traffic to the canary (v2). execute the following command
@@ -70,3 +70,9 @@ For that, we need to set a routing rule to control the traffic distribution by s
 $ kubectl apply -f 2-traffic-management/canary/canary-virtual-service.yaml 
 ```
 and refresh the page a couple of times. The majority of pages return v1 (blue), with some v2 (red) from time to time.
+#### 3. Route based on some criteria
+With istio, we can easily route requests when they met some desired criteria. 
+For now we have v1 and v2 deployed in our clusters, we can forward all forward all users using `Firefox` to v2, and serve v1 to all other clients:
+```
+$ kubectl apply -f 2-traffic-management/route-headers/frontv2-virtual-service-firefox.yaml
+```

@@ -9,15 +9,18 @@ spec:
   gateways:
   - sockshop-gateway
   http:
+  - match:
+    - headers:
+        user-agent:
+          regex: '.*Firefox.*'
+    route:    
+    - destination:
+        host: front-end
+        subset: v2
   - route:
     - destination:
         host: front-end
         subset: v1
-      weight: 80
-    - destination:
-        host: front-end
-        subset: v2
-      weight: 20
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
