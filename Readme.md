@@ -144,6 +144,18 @@ $ kubectl apply -f 3-resiliency/retry/retry-virtual-service.yaml
 ```
 Worth nothing to mention that retry policy defined in a `VirtualServic`e works in concert with the connection pool settings defined in the destination’s `DestinationRule` to control the total number of concurrent outstanding retries to the destination.
 
+#### 5. Timeouts
+Timeouts are important for building systems with consistent behavior. By attaching deadlines to requests, we’re able to abandon requests taking too long and free server resources.
+
+Here we configure a virtual service that specifies a 5 second timeout for calls to the `v1` subset of the `catalogue` service:
+```
+$ kubectl apply -f 3-resiliency/timeout/timeout-virtual-service.yaml
+```
+
+We combined in the example the use of retry and timeout. The timeout represents then the total time that the client will spend waiting for a server to return a result.
+
+### 4. Rate limiting (Depricated)
+
 
 --- 
 Ressources:
