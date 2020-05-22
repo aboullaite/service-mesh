@@ -133,6 +133,16 @@ Sockets used: 28 (for perfect keepalive, would be 4)
 Code 200 : 14 (35.0 %)
 Code 503 : 26 (65.0 %)
 ```
+#### 4. Retries
+Every system has transient failures: network buffers overflow, a server shutting down drops a request, a downstream system fails, and so on.
+
+Istio gives you the ability to configure retries globally for all services in your mesh. More significant, it allows you to control those retry strategies at runtime via configuration, so you can change client behavior on the fly.
+
+The following example configures a maximum of 3 retries to connect to `catalogue` service subset after an initial call failure, each with a 1s timeout.
+```
+$ kubectl apply -f 3-resiliency/retry/retry-virtual-service.yaml
+```
+Worth nothing to mention that retry policy defined in a `VirtualServic`e works in concert with the connection pool settings defined in the destination’s `DestinationRule` to control the total number of concurrent outstanding retries to the destination.
 
 
 --- 

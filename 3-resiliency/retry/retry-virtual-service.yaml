@@ -1,0 +1,16 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: catalogue
+  namespace: sock-shop
+spec:
+  hosts:
+  - catalogue
+  http:
+  - route:
+    - destination:
+        host: catalogue
+        subset: v1
+    retries:
+      attempts: 3
+      perTryTimeout: 1s
