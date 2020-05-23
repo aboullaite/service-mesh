@@ -154,7 +154,8 @@ $ kubectl apply -f 3-resiliency/timeout/timeout-virtual-service.yaml
 
 We combined in the example the use of retry and timeout. The timeout represents then the total time that the client will spend waiting for a server to return a result.
 
-### 4. Rate limiting (Depricated)
+### 4. Rate limiting (WIP)
+
 
 
 --- 
