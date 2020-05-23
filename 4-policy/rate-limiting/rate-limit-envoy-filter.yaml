@@ -5,11 +5,9 @@ metadata:
   namespace: istio-system
 spec:
   workloadSelector:
-    # select by label in the same namespace
     labels:
       istio: ingressgateway
   configPatches:
-      # The Envoy config you want to modify
     - applyTo: HTTP_FILTER
       match:
         context: GATEWAY
@@ -24,7 +22,6 @@ spec:
         value:
          name: envoy.rate_limit
          config:
-           # domain can be anything! Match it to the ratelimter service config
            domain: sock-shop-ratelimit
            rate_limit_service:
              grpc_service:

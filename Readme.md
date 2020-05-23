@@ -154,7 +154,8 @@ $ kubectl apply -f 3-resiliency/timeout/timeout-virtual-service.yaml
 
 We combined in the example the use of retry and timeout. The timeout represents then the total time that the client will spend waiting for a server to return a result.
 
-### 4. Rate limiting
+### 4. Policy
+#### 1. Rate limiting
 Rate limiting is generally put in place as a defensive measure for services. Shared services need to protect themselves from excessive use—whether intended or unintended—to maintain service availability.
 Till very soon, the recomanded way to set up rate limiting in Istio was to use [mixer policy](https://istio.io/docs/tasks/policy-enforcement/rate-limiting/). Since version 1.5 the mixer policy is deprecated and not recommended for production usage, and the  preferred way is using [Envoy native rate limiting](https://www.envoyproxy.io/docs/envoy/v1.13.0/intro/arch_overview/other_features/global_rate_limiting) instead of mixer rate limiting. 
 There is no native support yet for rate limiting API with Istio. To overcome this, we'll be using the [rate limit service](https://github.com/envoyproxy/ratelimit), which is is a Go/gRPC service designed to enable generic rate limit scenarios from different types of applications.
@@ -164,27 +165,45 @@ To mimic a real world example, we suppose that we have 2 plans:
 
 We configured Envoy rate limiting actions to look for `x-plan` and `x-account` in request headers. We also configured the descriptor match any request with the account and plan keys, such that (`'account', '<unique value>')`, `('plan', 'BASIC | PLUS')`. The `account` key doesn't specify any value, it uses each unique value passed into the rate limiting service to match. The `plan` descriptor key has two values specified and depending on which one matches (BASIC or PLUS) determines the rate limit, either 5 request per minute for `BASIC` or 20 requests per minute for `PLUS`.
 ```
-$ kubectl apply -f 4-rate-limiting/rate-limit-service.yaml
-$ kubectl apply -f 4-rate-limiting/date-limit-envoy-filter.yaml  
+$ kubectl apply -f 4-policy/rate-limiting/rate-limit-service.yaml
+$ kubectl apply -f 4-policy/rate-limiting/date-limit-envoy-filter.yaml  
 ``` 
 Testing the above scenarios prove that the rate limiting is working
 ```bash
 ####  BASIC PLAN
-$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 10 -loglevel Warning -H "x-plan: BASIC" -H "x-account: user" 34.72.255.157/catalogue
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 10 -loglevel Warning -H "x-plan: BASIC" -H "x-account: user" $INGRESS_IP/catalogue
 ...
 Sockets used: 5 (for perfect keepalive, would be 1)
 Code 200 : 5 (50.0 %)
 Code 429 : 5 (50.0 %)
 ### PLUS PLAN
-$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 25 -loglevel Warning -H "x-plan: PLUS" -H "x-account: user2" 34.72.255.157/catalogue
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 25 -loglevel Warning -H "x-plan: PLUS" -H "x-account: user2" $INGRESS_IP/catalogue
 ...
 Sockets used: 5 (for perfect keepalive, would be 1)
 Code 200 : 20 (80.0 %)
 Code 429 : 5 (20.0 %)
 ```
+#### 2. CORS
+Cross-Origin Resource Sharing (CORS) is a method of enforcing client-side access controls on resources by specifying external domains that are able to access certain or all routes of your domain. Browsers use the presence of HTTP headers to determine if a response from a different origin is allowed.
 
+For example, the following rule restricts cross origin requests to those originating from `aboullaite.me` domain using HTTP POST/GET, and sets the `Access-Control-Allow-Credentials` header to false. In addition, it only exposes `X-Foo-bar` header and sets an expiry period of 1 day.
 
-
+```bash 
+$ kubectl apply -f 4-policy/cors/cors-virtual-service.yaml  
+```
+Checking now CORS options to confirm that the config effectively took place
+```bash
+curl -I -X OPTIONS -H 'access-control-request-method: PUT' -H 'origin: http://aboullaite.me' http://$INGRESS_IP/catalogue
+#### should return output below
+HTTP/1.1 200 OK
+access-control-allow-origin: http://aboullaite.me
+access-control-allow-methods: POST,GET
+access-control-allow-headers: X-Foo-Bar
+access-control-max-age: 86400
+date: Sat, 23 May 2020 15:40:05 GMT
+server: istio-envoy
+content-length: 0
+```
 
 --- 
 Ressources:
