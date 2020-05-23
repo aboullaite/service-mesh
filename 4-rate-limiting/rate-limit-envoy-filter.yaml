@@ -71,4 +71,9 @@ spec:
         value:
           rate_limits:
             - actions:
-                - remote_address: {}
+                - request_headers:
+                    header_name: "x-account"
+                    descriptor_key: "account" 
+                - request_headers:
+                    header_name: "x-plan"
+                    descriptor_key: "plan"               
