@@ -113,7 +113,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ratelimit-config
-  namespace: default
+  namespace: sock-shop
 data:
   config.yaml: |
     domain: sock-shop-ratelimit

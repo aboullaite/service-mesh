@@ -154,7 +154,23 @@ $ kubectl apply -f 3-resiliency/timeout/timeout-virtual-service.yaml
 
 We combined in the example the use of retry and timeout. The timeout represents then the total time that the client will spend waiting for a server to return a result.
 
-### 4. Rate limiting (WIP)
+### 4. Rate limiting
+Rate limiting is generally put in place as a defensive measure for services. Shared services need to protect themselves from excessive use—whether intended or unintended—to maintain service availability.
+Till very soon, the recomanded way to set up rate limiting in Istio was to use [mixer policy](https://istio.io/docs/tasks/policy-enforcement/rate-limiting/). Since version 1.5 the mixer policy is deprecated and not recommended for production usage, and the  preferred way is using [Envoy native rate limiting](https://www.envoyproxy.io/docs/envoy/v1.13.0/intro/arch_overview/other_features/global_rate_limiting) instead of mixer rate limiting. 
+There is no native support yet for rate limiting API with Istio. To overcome this, we'll be using the [rate limit service](https://github.com/envoyproxy/ratelimit), which is is a Go/gRPC service designed to enable generic rate limit scenarios from different types of applications.
+```
+$ kubectl apply -f 4-rate-limiting/rate-limit-service.yaml
+$ kubectl apply -f 4-rate-limiting/date-limit-envoy-filter.yaml  
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 100 -qps 0 -n 1000 -loglevel Warning 34.72.255.157/catalogue
+```
+We configured the rate limiter to drop more than 60 requests per minute. You should see something similar to this in the output:
+```
+Sockets used: 518 (for perfect keepalive, would be 100)
+Code 200 : 499 (49.9 %)
+Code 429 : 501 (50.1 %)
+```
+
+
 
 
 
