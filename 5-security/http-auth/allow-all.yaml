@@ -1,0 +1,9 @@
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-all
+  namespace: sock-shop
+spec:
+ rules:
+ - {}
+

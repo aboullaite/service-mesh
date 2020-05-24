@@ -1,0 +1,30 @@
+apiVersion: "security.istio.io/v1beta1"
+kind: "RequestAuthentication"
+metadata:
+  name: "jwt-sock-shop"
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: catalogue
+      version: v1
+  jwtRules:
+  - issuer: "testing@secure.istio.io"
+    jwksUri: "https://raw.githubusercontent.com/aboullaite/service-mesh/master/5-security/jwt/jwks.json"
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: catalogue
+      version: v1
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+       requestPrincipals: ["testing@secure.istio.io/testing@secure.istio.io"]
+

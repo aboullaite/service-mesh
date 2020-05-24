@@ -244,6 +244,21 @@ Let's fix this:
 $ kubectl apply 5-security/http-auth/allow-policy.yaml   
 ```
 Here we allow only `GET`  http method. If you try to call the link using a `POST` method for example, you should see "RBAC: access denied".
+#### 3. JWT
+Another great feature of Istio authorization policy ia ability to enforce access based on a JSON Web Token (JWT). An Istio authorization policy supports both string typed and list-of-string typed JWT claims.
+Let's start by creating a `RequestAuthentication` policy for the `front-end` workload in the `sock-shop` namespace. This policy for front-end workload accepts a JWT issued by `testing@secure.istio.io`. We'll create also a `AuthorizationPolicy` policy that requires all requests to the `front-end` workload to have a valid JWT with requestPrincipal set to `testing@secure.istio.io/testing@secure.istio.io`.
+```bash
+$ kubectl apply -f 5-security/jwt/jwt-request-auth.yaml  
+```
+Verify that a request with an invalid JWT is denied:
+```bash
+kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -curl -H "Authorization: Bearer invalidToken" http://catalogue/tags
+```
+Verify that a request with a valid JWT is allowed:
+```bash
+$ TOKEN=$(curl https://raw.githubusercontent.com/aboullaite/service-mesh/master/5-security/jwt/data.jwt -s)
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -curl -H "Authorization: Bearer $TOKEN" http://catalogue/tags
+```
 
 
 --- 
