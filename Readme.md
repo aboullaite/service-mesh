@@ -204,6 +204,26 @@ date: Sat, 23 May 2020 15:40:05 GMT
 server: istio-envoy
 content-length: 0
 ```
+### 5. Security
+#### 1. mutual TLS authentication
+With all of the identity certificates (SVIDs) distributed to workloads across the system, how do we actually use them to verify the identity of the servers with which we’re communicating and perform authentication and authorization? This is where mTLS comes into play.
+mTLS is TLS in which both parties, client and server, present certificates to each other. This allows the client to verify the identity of the server, like normal TLS, but it also allows the server to verify the identity of the client attempting to establish the connection. 
+In this example, we will migrate the existing Istio services traffic from plaintext to mutual TLS without breaking live traffic.
+
+First we start by enabling mTLS:
+```bash
+$ kubectl apply -f 5-security/mtls/authentication-enable-mtls.yaml 
+$ kubectl apply -f 5-security/mtls/destination-rule-tls.yml  
+```
+Istio automatically installs necessary keys and certificates for mutual TLS authentication in all sidecar containers. You can use the istioctl tool to check the effective mutual TLS settings.
+```bash
+istioctl -nsock-shop authn tls-check $(kubectl -n sock-shop get pod -l name=user -o jsonpath={.items..metadata.name}) catalogue.sock-shop.svc.cluster.local 
+```
+To confirm that plain-text requests fail as TLS is required to talk to any service in the mesh, we redeploy fortlio by disabling sidecare injection this time. and run some requests
+```bash
+$ kubectl apply -f 5-security/fortio.yaml
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -curl -k http://catalogue/tags  
+```
 
 --- 
 Ressources:
