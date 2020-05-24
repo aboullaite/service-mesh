@@ -1,0 +1,26 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: catalogue
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: catalogue
+  mtls:
+    mode: DISABLE
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: catalogue
+  namespace: sock-shop
+spec:
+  host: catalogue
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+  subsets:
+  - name: v1
+    labels:
+      version: v1

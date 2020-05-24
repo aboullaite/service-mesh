@@ -1,0 +1,177 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: sock-shop
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: carts
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: carts
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: carts-db
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: carts-db
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: catalogue
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: catalogue
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: catalogue-db
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: catalogue-db
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: front-end
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: front-end
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: orders
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: orders
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: orders-db
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: orders-db
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: payment
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: payment
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: queue-master
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: queue-master
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: shipping
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: shipping
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: rabbitmq
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: rabbitmq
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: user
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: user
+      version: v1
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: user-db
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: user-db
+      version: v1
+  mtls:
+    mode: STRICT

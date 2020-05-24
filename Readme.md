@@ -210,19 +210,27 @@ With all of the identity certificates (SVIDs) distributed to workloads across th
 mTLS is TLS in which both parties, client and server, present certificates to each other. This allows the client to verify the identity of the server, like normal TLS, but it also allows the server to verify the identity of the client attempting to establish the connection. 
 In this example, we will migrate the existing Istio services traffic from plaintext to mutual TLS without breaking live traffic.
 
-First we start by enabling mTLS:
+Istio 1.5 brings the concept of PeerAuthentication, which is a CRD that allows us to enable and configure mTLS at both the cluster level and namespace level. First we start by enabling mTLS:
 ```bash
-$ kubectl apply -f 5-security/mtls/authentication-enable-mtls.yaml 
+$ kubectl apply -f 5-security/mtls/peer-auth-mtls.yaml
 $ kubectl apply -f 5-security/mtls/destination-rule-tls.yml  
 ```
-Istio automatically installs necessary keys and certificates for mutual TLS authentication in all sidecar containers. You can use the istioctl tool to check the effective mutual TLS settings.
-```bash
-istioctl -nsock-shop authn tls-check $(kubectl -n sock-shop get pod -l name=user -o jsonpath={.items..metadata.name}) catalogue.sock-shop.svc.cluster.local 
-```
+
 To confirm that plain-text requests fail as TLS is required to talk to any service in the mesh, we redeploy fortlio by disabling sidecare injection this time. and run some requests
 ```bash
 $ kubectl apply -f 5-security/fortio.yaml
 $ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -curl -k http://catalogue/tags  
+```
+You should notice that fortio fails to make calls to `catalogue` service, and we get a `Connection reset by peer` which is what we expected.
+Now how do we get a successful connection? In order to have applications communicate over mutual TLS, they need to be onboarded onto the mesh. Or we can disable mTLS for `catalogue` service
+```bash
+$ kubectl apply -f 5-security//disable-mtls-catalogue.yaml
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -curl -k http://catalogue/tags  
+```
+You can see that the request was successful! But if you go to our app, you should notice that no catalogues are returned, we should re-enable mtls again in order to work:
+```bash
+$ kubectl apply -f 5-security/mtls/peer-auth-mtls.yaml
+$ kubectl apply -f 5-security/mtls/destination-rule-tls.yml  
 ```
 
 --- 
