@@ -1,0 +1,17 @@
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-catalogue-list
+  namespace: sock-shop
+spec:
+  selector:
+    matchLabels:
+      name: front-end
+      version: v1
+  action: ALLOW
+  rules:
+  - to:
+    - operation:
+        paths: ["/catalogue"]
+        methods: ["GET"]
+

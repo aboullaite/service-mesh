@@ -232,6 +232,19 @@ You can see that the request was successful! But if you go to our app, you shoul
 $ kubectl apply -f 5-security/mtls/peer-auth-mtls.yaml
 $ kubectl apply -f 5-security/mtls/destination-rule-tls.yml  
 ```
+#### 2. Authorization for HTTP traffic
+Istio’s authorization features provide mesh-, namespace-, and workload-wide access control for your workloads in the mesh. 
+We'll start by creating a deny-all policy for the `/catalogue` path in the front-end service
+```bash
+$ kubectl apply 5-security/http-auth/deny-policy.yaml   
+```
+Point your browser at the app (`http://$$INGRESS_IP/catalogue`). You should see "RBAC: access denied". The error shows that the configured deny-all policy is working as intended.
+Let's fix this:
+```bash
+$ kubectl apply 5-security/http-auth/allow-policy.yaml   
+```
+Here we allow only `GET`  http method. If you try to call the link using a `POST` method for example, you should see "RBAC: access denied".
+
 
 --- 
 Ressources:
