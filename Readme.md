@@ -1,7 +1,7 @@
 This repo contains demo for my talk about service meshes. It is based on [microservices-demo application](https://github.com/microservices-demo/microservices-demo) with some minor modifications to make it play nicely with istio. 
 
 This demo is deployed and tested with `kubernetes 1.16` and `istio 1.5`
-
+![Sock Shop app](assets/sock-shop.png)
 ### 0. Install istio
 1. Refer to [istio docs](https://istio.io/docs/setup/install/) for different methods on how install istio. Istio will be installed in a deferent namespace called `istio-system`
 2. Create a namespace for our application and add a namespace label to instruct Istio to automatically inject Envoy sidecar proxies during deployment of sock-shop app. 
