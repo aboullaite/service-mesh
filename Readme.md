@@ -287,7 +287,21 @@ $ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=
 Then open `localhost:3000`, click on `Istio Mesh Dashboard`. This gives the global view of the Mesh along with services and workloads in the mesh. You can get more details about services and workloads by navigating to their specific dashboards as explained below.
 ![Istio Dashboard](assets/grafana-istio-dashboard.png)
 From the Grafana dashboard’s left hand corner navigation menu, you can navigate to Istio Service Dashboard and select any service. It gives details about metrics for the service and then client workloads (workloads that are calling this service) and service workloads (workloads that are providing this service) for that service.
-![Catalogue service dashboard](grafana-catalogue-dashboard.png)
+![Catalogue service dashboard](assets/grafana-catalogue-dashboard.png)
+
+#### 3. Tracing
+Tracing allows you to granularly track request segments (spans) as the request is processed across various services. It’s difficult to introduce later, as (among other reasons) third-party libraries used by the application also need to be instrumented.
+
+Istio-enabled applications can be configured to collect trace spans using, for instance, the popular [Jaeger](https://www.jaegertracing.io/docs/) distributed tracing system. Distributed tracing lets you see the flow of requests a user makes through your system, and Istio's model allows this regardless of what language/framework/platform you use to build your application.
+
+Again, we configure port-forwarding using:
+```bash
+$ kubectl port-forward -n istio-system $(kubectl get pod -n istio-system -l app=jaeger -o jsonpath='{.items[0].metadata.name}') 16686:16686 &
+```
+From the left-hand pane of the dashboard, select any service from the Service drop-down list and click Find Traces:
+![Jaeger](assets/jaeger.png)
+Click on any trace to see details. The trace is comprised of a set of spans, where each span corresponds to a  service, invoked during the execution of a request
+!(Jaeger Traces)[assets/jaeger-traces.png]
 
 --- 
 Ressources:
