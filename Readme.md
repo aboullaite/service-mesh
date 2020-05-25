@@ -18,6 +18,7 @@ No changes we're made to the original k8s manifests from [microservices-demo app
 
 1. deploy the application
 ```bash
+$ kubectl apply -f 1-deploy-app/manifests/sock-shop-ns.yaml 
 $ kubectl apply -f 1-deploy-app/manifests
 ```
 
@@ -259,7 +260,34 @@ Verify that a request with a valid JWT is allowed:
 $ TOKEN=$(curl https://raw.githubusercontent.com/aboullaite/service-mesh/master/5-security/jwt/data.jwt -s)
 $ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -curl -H "Authorization: Bearer $TOKEN" http://catalogue/tags
 ```
+### 6. Observability
+Insight is the number one reason why people deploy a service mesh. Not only do service meshes provide a level of immediate insight, but they also do so uniformly and ubiquitously. You might be accustomed to having individual monitoring solutions for distributed tracing, logging, security, access control, metering, and so on. Service meshes centralize and assist in consolidating these separate panes of glass by generating metrics, logs, and traces of requests transiting the mesh. 
 
+To generate some load for our application, we deploy a small load test app that packages a test script for [Locust](https://locust.io/) that simulates user traffic to Sock Shop:
+```bash
+$ kubectl apply -f 6-observability/loadtest-dep.yaml
+```
+#### 1. Prometheus
+First, let's verify that the prometheus service is running in the cluster:
+```bash
+$ kubectl -n istio-system get svc prometheus
+```
+You should see that its up and available on port 9090. Let's check it out by configuring port-forwarding:
+```bash
+$ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=prometheus -o jsonpath='{.items[0].metadata.name}') 9090:9090 &
+```
+Next, open `localhost:9090` on your browser and let's query for total requests to catalogue service. In the “Expression” input box at the top of the web page, enter the text: `istio_requests_total{destination_service="catalogue.sock-shop.svc.cluster.local"}`. Then, click the Execute button. 
+![Prometheus metrics](assets/prometheus.png)
+You can excit port-forwarding mode using `ctrl + c`
+#### 2. Grafana
+Grafana is mainly used to visualize the prometheus data. Similarly we use port-forwarding to visualize Grafana dashboard:
+```bash
+$ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=grafana -o jsonpath='{.items[0].metadata.name}') 3000:3000 &
+```
+Then open `localhost:3000`, click on `Istio Mesh Dashboard`. This gives the global view of the Mesh along with services and workloads in the mesh. You can get more details about services and workloads by navigating to their specific dashboards as explained below.
+![Istio Dashboard](assets/grafana-istio-dashboard.png)
+From the Grafana dashboard’s left hand corner navigation menu, you can navigate to Istio Service Dashboard and select any service. It gives details about metrics for the service and then client workloads (workloads that are calling this service) and service workloads (workloads that are providing this service) for that service.
+![Catalogue service dashboard](grafana-catalogue-dashboard.png)
 
 --- 
 Ressources:
