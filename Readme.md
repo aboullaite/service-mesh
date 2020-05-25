@@ -280,8 +280,9 @@ Next, open `localhost:9090` on your browser and let's query for total requests t
 ![Prometheus metrics](assets/prometheus.png)
 You can excit port-forwarding mode using `ctrl + c`
 #### 2. Grafana
-Grafana is mainly used to visualize the prometheus data. Similarly we use port-forwarding to visualize Grafana dashboard:
+Grafana is mainly used to visualize the prometheus data. Similarly we verify that the service is running and use port-forwarding to visualize Grafana dashboard:
 ```bash
+$ kubectl -n istio-system get svc grafana
 $ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=grafana -o jsonpath='{.items[0].metadata.name}') 3000:3000 &
 ```
 Then open `localhost:3000`, click on `Istio Mesh Dashboard`. This gives the global view of the Mesh along with services and workloads in the mesh. You can get more details about services and workloads by navigating to their specific dashboards as explained below.
@@ -302,6 +303,17 @@ From the left-hand pane of the dashboard, select any service from the Service dr
 ![Jaeger](assets/jaeger.png)
 Click on any trace to see details. The trace is comprised of a set of spans, where each span corresponds to a  service, invoked during the execution of a request
 !(Jaeger Traces)[assets/jaeger-traces.png]
+#### 4. Kiali
+First step, is to verify Kiali is running and port-forward to access kiali:
+```bash
+$ kubectl -n istio-system get svc kiali
+$ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=kiali -o jsonpath='{.items[0].metadata.name}') 20001:20001
+```
+Open kiali dashboard an login using `admin` as username and password. you should the Overview page immediately after you log in. To view a namespace graph, click on the `sock-shop` graph icon in the Sock-Shop namespace card.
+![Kiali graph](assets/kiali.png)
+As you can see, the graph that Kiali generated is an excellent way to get a general idea of how a given microservices application is working behind the scenes, which services talk to which, stream flow...
+To examine the details about the Istio configuration, click on the Applications, Workloads, and Services menu icons on the left menu bar. The following screenshot shows the Sock-shop applications information:
+![Applications](assets/kiali-apps.png)
 
 --- 
 Ressources:
