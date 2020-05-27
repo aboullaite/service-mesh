@@ -1,9 +1,10 @@
+# Service Mesh Demo
 This repo contains demo for my talk about service meshes. It is based on [microservices-demo application](https://github.com/microservices-demo/microservices-demo) with some minor changes to make it play nicely with istio. 
 
 This demo is deployed and tested with `kubernetes 1.16` and `istio 1.5`
 
 ![Sock Shop app](assets/sock-shop.png)
-
+## Content
 - [0. Install istio](#0-install-istio)
 - [1. Deployment](#1-deploy-application)
     - [deploy application](#1-deploy-the-application)
