@@ -3,6 +3,37 @@ This repo contains demo for my talk about service meshes. It is based on [micros
 This demo is deployed and tested with `kubernetes 1.16` and `istio 1.5`
 
 ![Sock Shop app](assets/sock-shop.png)
+
+- [0. Install istio](#0-install-istio)
+- [1. Deployment](#1-deploy-application)
+    - [deploy application](#1-deploy-the-application)
+    - [Configure Istio virtual services & Distination rules](#2-configure-istio-virtual-services--distination-rules)
+    - [Configure Istio ingress gateway](#3-configure-istio-ingress-gateway)
+    - [Verifying our config](#4-verifying-our-config)
+    - [5. User accounts](#5-user-accounts)
+- [2. Traffic Management](#2-traffic-management)
+    - [1. Blue/Green Deployment](#1-bluegreen-deployment)
+    - [2. Canary deployment](#2-canary-deployment)
+    - [3. Route based on some criteria](#3-route-based-on-some-criteria)
+    - [4. Mirroring](#4-mirroring)
+- [3. Resiliency](#3-resiliency)
+    - [1. Fault injection](#1-fault-injection)
+    - [2. Load-Balancing Strategy](#2-load-balancing-strategy)
+    - [3. Circuit Breaking](#3-circuit-breaking)
+    - [4. Retries](#4-retries)
+    - [5. Timeouts](#5-timeouts)
+- [4. Policy](#4-policy)
+    - [1. Rate limiting](#1-rate-limiting)
+    - [2. CORS](#2-cors)
+- [5. Security](#5-Security)
+    - [1. mutual TLS authentication](#1-mutual-tls-authentication)
+    - [2. Authorization for HTTP traffic](#2-authorization-for-http-traffic)
+    - [3. JWT](#3-jwt)
+- [6. Observability](#6-observability)
+    - [1. Prometheus](#1-prometheus)
+    - [2. Grafana](#-2-grafana)
+    - [3. Tracing](#3-tracing)
+    - [4. Kiali](#4-kiali)
 ## 0. Install istio
 1. Refer to [istio docs](https://istio.io/docs/setup/install/) for different methods on how to install istio. Istio will be installed in a deferent namespace called `istio-system`
 2. Create a namespace for our application and add a namespace label to instruct Istio to automatically inject Envoy sidecar proxies during deployment of sock-shop app. 
@@ -10,13 +41,13 @@ This demo is deployed and tested with `kubernetes 1.16` and `istio 1.5`
 $ kubectl apply -f 1-deploy-app/manifests/sock-shop-ns.yaml 
 ```
 You can find more about sidecar injection [here](https://istio.io/docs/setup/additional-setup/sidecar-injection/)
-## 1. Deploy application
+## 1. Deployment
 No changes we're made to the original k8s manifests from [microservices-demo repo](https://github.com/microservices-demo/microservices-demo) except:
 
 + updating `Deployment` resources to use the sable api `apps/v1` required since [k8s 1.16](https://kubernetes.io/blog/2019/09/18/kubernetes-1-16-release-announcement/)
 + added `version: v1` label to all Kubernetes deployments. We need it for Istio `Destination Rules` to work properly
 
-### 1. deploy the application
+### 1. deploy app
 ```bash
 $ kubectl apply -f 1-deploy-app/manifests
 ```
@@ -322,7 +353,7 @@ Then open `localhost:3000`, click on `Istio Mesh Dashboard`. This gives the glob
 From the Grafana dashboard’s left hand corner navigation menu, you can navigate to Istio Service Dashboard and select any service. It gives details about metrics for the service and then client workloads (workloads that are calling this service) and service workloads (workloads that are providing this service) for that service.
 ![Catalogue service dashboard](assets/grafana-catalogue-dashboard.png)
 
-#### 3. Tracing
+### 3. Tracing
 Tracing allows you to granularly track request segments (spans) as the request is processed across various services. It’s difficult to introduce later, as (among other reasons) third-party libraries used by the application also need to be instrumented.
 
 Istio-enabled applications can be configured to collect trace spans using, for instance, the popular [Jaeger](https://www.jaegertracing.io/) distributed tracing system. Distributed tracing lets you see the flow of requests a user makes through your system, and Istio's model allows this regardless of what language/framework/platform you use to build your application.
@@ -339,7 +370,7 @@ Click on any trace to see details. The trace is comprised of a set of spans, whe
 
 !(Jaeger Traces)[assets/jaeger-traces.png]
 
-#### 4. Kiali
+### 4. Kiali
 First step, is to verify Kiali is running and port-forward to access kiali:
 ```bash
 $ kubectl -n istio-system get svc kiali
