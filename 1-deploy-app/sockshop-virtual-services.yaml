@@ -121,7 +121,6 @@ spec:
     - destination:
         host: front-end
         subset: v1
-
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
