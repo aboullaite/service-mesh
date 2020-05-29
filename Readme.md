@@ -369,7 +369,7 @@ From the left-hand pane of the dashboard, select any service from the Service dr
 
 Click on any trace to see details. The trace is comprised of a set of spans, where each span corresponds to a  service, invoked during the execution of a request
 
-!(Jaeger Traces)[assets/jaeger-traces.png]
+![Jaeger Traces](assets/jaeger-traces.png)
 
 ### 4. Kiali
 First step, is to verify Kiali is running and port-forward to access kiali:
