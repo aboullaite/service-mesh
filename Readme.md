@@ -88,7 +88,7 @@ Istio’s traffic routing rules let you easily control the flow of traffic and A
 
 We start by rolling a new Deployment of `v2` version of the front-end service
 ```bash
-$ kubectl apply -f 2-traffic-management/canary/front-end-dep-v2.yaml  
+$ kubectl apply -f 2-traffic-management/front-end-dep-v2.yaml
 ```
 now we have 2 versions of the front-end app running side by side. However if you hit the browser you'll see only the `v1` (blue)
 
