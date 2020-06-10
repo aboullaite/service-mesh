@@ -136,7 +136,7 @@ Istio allows you to configure faults for HTTP traffic, injecting arbitrary delay
 #### Delay fault
 In this example. we gonna inject five seconds delay for all traffic calling the `catalogue` service. This is a great way to reliably test how our app behaves on a bad network.
 ```bash
-$ kubectl apply -f 3-resiliency/fault-injection/delay-faults/delay-fault-injection-virtual-service.yaml
+$ kubectl apply -f 3-resiliency/fault-injection/delay-fault-injection-virtual-service.yaml
 ```
 Open the application and you can see that it takes now longer to render catalogs
 #### Abort fault
@@ -144,7 +144,7 @@ Replying to clients with specific response codes, like a 429 or a 500, is also g
 
 For example, we can simulate 10% of requests to `catalogue` service is failing at runtime with a 500 response code.
 ```bash
-$ kubectl apply -f 3-resiliency/fault-injection/delay-faults/abort-fault-injection-virtual-service.yaml 
+$ kubectl apply -f 3-resiliency/fault-injection/abort-fault-injection-virtual-service.yaml 
 $ open "http://$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')/catalogue"
 ```
 Refresh the page a couple of times. You'll notice that sometimes it doesn't return the json list of catalogs
