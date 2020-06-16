@@ -211,7 +211,7 @@ To mimic a real world example, we suppose that we have 2 plans:
 We configure Envoy rate limiting actions to look for `x-plan` and `x-account` in request headers. We also configure the descriptor match any request with the account and plan keys, such that (`'account', '<unique value>')`, `('plan', 'BASIC | PLUS')`. The `account` key doesn't specify any value, it uses each unique value passed into the rate limiting service to match. The `plan` descriptor key has two values specified and depending on which one matches (BASIC or PLUS) determines the rate limit, either 5 request per minute for `BASIC` or 20 requests per minute for `PLUS`.
 ```
 $ kubectl apply -f 4-policy/rate-limiting/rate-limit-service.yaml
-$ kubectl apply -f 4-policy/rate-limiting/date-limit-envoy-filter.yaml  
+$ kubectl apply -f 4-policy/rate-limiting/rate-limit-envoy-filter.yaml 
 ``` 
 Testing the above scenarios prove that the rate limiting is working
 ```bash
@@ -219,18 +219,43 @@ Testing the above scenarios prove that the rate limiting is working
 $ kubectl apply -f 4-policy/fortio.yaml 
 $ FORTIO_POD=$(kubectl get pod -n sock-shop| grep fortio | awk '{ print $1 }')  
 ####  BASIC PLAN
-$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 10 -loglevel Warning -H "x-plan: BASIC" -H "x-account: user" $INGRESS_IP/catalogue
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 2 -loglevel Warning -H "x-plan: BASIC" -H "x-account: user" $INGRESS_IP/catalogue
 ...
 Sockets used: 5 (for perfect keepalive, would be 1)
-Code 200 : 5 (50.0 %)
-Code 429 : 5 (50.0 %)
+Code 200 : 1 (50.0 %)
+Code 429 : 1 (50.0 %)
 ### PLUS PLAN
-$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 25 -loglevel Warning -H "x-plan: PLUS" -H "x-account: user2" $INGRESS_IP/catalogue
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 4 -loglevel Warning -H "x-plan: PLUS" -H "x-account: user2" $INGRESS_IP/catalogue
 ...
 Sockets used: 5 (for perfect keepalive, would be 1)
-Code 200 : 20 (80.0 %)
-Code 429 : 5 (20.0 %)
+Code 200 : 2 (50.0 %)
+Code 429 : 2 (50.0 %)
 ```
+
+Or you can use curl from your terminal:
+
+```bash
+export INGRESS_IP=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+curl --request GET "http://${INGRESS_IP}/catalogue" -I --header 'x-plan: BASIC' --header 'x-account: user'
+
+curl --request GET "http://${INGRESS_IP}/catalogue" -I --header 'x-plan: PLUS' --header 'x-account: user'
+```
+
+You can check in redis how keys are stored:
+
+```bash
+export REDIS_POD=$(kubectl get pod -n rate-limit | grep redis | awk '{ print $1 }')
+
+k -n rate-limit exec -it $REDIS_POD -c redis /bin/sh
+
+redis-cli
+
+keys *
+
+```
+
+
 #### 2. CORS
 Cross-Origin Resource Sharing (CORS) is a method of enforcing client-side access controls on resources by specifying external domains that are able to access certain or all routes of your domain. Browsers use the presence of HTTP headers to determine if a response from a different origin is allowed.
 
