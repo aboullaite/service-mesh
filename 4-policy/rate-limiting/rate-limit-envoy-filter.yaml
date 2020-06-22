@@ -31,7 +31,7 @@ spec:
     - applyTo: CLUSTER
       match:
         cluster:
-          service: ratelimit.sock-shop.svc.cluster.local
+          service: ratelimit.rate-limit.svc.cluster.local
       patch:
         operation: ADD
         value:
@@ -42,7 +42,7 @@ spec:
           http2_protocol_options: {}
           hosts:
             - socket_address:
-                address: ratelimit.sock-shop.svc.cluster.local
+                address: ratelimit.rate-limit.svc.cluster.local
                 port_value: 8081
 ---
 apiVersion: networking.istio.io/v1alpha3
@@ -66,11 +66,12 @@ spec:
       patch:
         operation: MERGE
         value:
+          # rate limit service descriptors config relays on the order of the request headers (desriptor_key)
           rate_limits:
             - actions:
                 - request_headers:
-                    header_name: "x-account"
-                    descriptor_key: "account" 
-                - request_headers:
                     header_name: "x-plan"
                     descriptor_key: "plan"               
+                - request_headers:
+                    header_name: "x-account"
+                    descriptor_key: "account" 
