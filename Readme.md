@@ -75,6 +75,13 @@ If everything is fine, run the below command to open sock-shop app in your brows
 ```bash
 $ open "http://$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
 ```
+
+Note: If you are using `minikube`, remember to run 
+```bash 
+minikube tunnel
+```
+This will ensure you can open the url above in your browser.
+
 If everything is fine you should see the app up and running along with some socks :) 
 ### 5. User accounts
 
