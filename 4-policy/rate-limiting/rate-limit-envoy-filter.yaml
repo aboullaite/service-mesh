@@ -60,7 +60,7 @@ spec:
         context: GATEWAY
         routeConfiguration:
           vhost:
-            name: "*:80"
+            name: "*:80" # NOTE: this is an exact match not a glob match. It will not match 'example.com:80'
             route:
               action: ANY
       patch:
