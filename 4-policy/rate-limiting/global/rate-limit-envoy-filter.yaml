@@ -20,14 +20,17 @@ spec:
       patch:
         operation: INSERT_BEFORE
         value:
-         name: envoy.rate_limit
-         config:
-           domain: sock-shop-ratelimit
-           rate_limit_service:
-             grpc_service:
-               envoy_grpc:
-                 cluster_name: rate_limit_service
-           timeout: 0.25s
+          name: envoy.filters.http.ratelimit
+          typed_config:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+            domain: sock-shop-ratelimit
+            failure_mode_deny: true
+            rate_limit_service:
+              grpc_service:
+                envoy_grpc:
+                  cluster_name: rate_limit_service
+                timeout: 10s
+              transport_api_version: V3
     - applyTo: CLUSTER
       match:
         cluster:
@@ -40,10 +43,15 @@ spec:
           connect_timeout: 0.25s
           lb_policy: ROUND_ROBIN
           http2_protocol_options: {}
-          hosts:
-            - socket_address:
-                address: ratelimit.rate-limit.svc.cluster.local
-                port_value: 8081
+          load_assignment:
+            cluster_name: rate_limit_cluster
+            endpoints:
+            - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: ratelimit.rate-limit.svc.cluster.local
+                      port_value: 8081
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter

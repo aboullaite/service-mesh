@@ -101,7 +101,7 @@ now we have 2 versions of the front-end app running side by side. However if you
 
 #### 1. Blue/Green Deployment
 Blue-green deployment is a technique that reduces downtime and risk by running two identical production environments called Blue and Green.
-Now let's switch to `v1` (red) as live environment serving all production traffic. 
+Now let's switch to `v2` (red) as live environment serving all production traffic. 
 ```bash
 $ kubectl apply -f 2-traffic-management/blue-green/frontv2-virtual-service.yaml
 ```
@@ -133,7 +133,7 @@ This new rule sends 100% of the traffic to `v1` while mirroring the same traffic
 #### 5. Clean up
 ```bash
 $ kubectl apply -f 2-traffic-management/cleanup-virtual-service.yaml
-$ kubectl delete -f 2-traffic-management/canary/front-end-dep-v2.yaml  
+$ kubectl delete -f 2-traffic-management/front-end-dep-v2.yaml  
 ```
 
 ## 3. Resiliency
@@ -190,7 +190,7 @@ The following example configures a maximum of 3 retries to connect to `catalogue
 ```bash
 $ kubectl apply -f 3-resiliency/retry/retry-virtual-service.yaml
 ```
-Worth nothing to mention that retry policy defined in a `VirtualService` works in concert with the connection pool settings defined in the destination’s `DestinationRule` to control the total number of concurrent outstanding retries to the destination.
+Worth noting that retry policy defined in a `VirtualService` works in concert with the connection pool settings defined in the destination’s `DestinationRule` to control the total number of concurrent outstanding retries to the destination.
 ### 5. Timeouts
 Timeouts are important for building systems with consistent behavior. By attaching deadlines to requests, we’re able to abandon requests taking too long and free server resources.
 
@@ -209,7 +209,8 @@ $ kubectl delete -f 3-resiliency/circuit-breaking/fortio.yaml
 ## 4. Policy
 ### 1. Rate limiting
 Rate limiting is generally put in place as a defensive measure for services. Shared services need to protect themselves from excessive use (whether intended or unintended) to maintain service availability.
-Till very recently, the recommended way to set up rate limiting in Istio was to use [mixer policy](https://istio.io/docs/tasks/policy-enforcement/rate-limiting/). Since `version 1.5` the mixer policy is deprecated and not recommended for production, and the  preferred way is using [Envoy native rate limiting](https://www.envoyproxy.io/docs/envoy/v1.13.0/intro/arch_overview/other_features/global_rate_limiting) instead of mixer rate limiting. 
+#### Global rate limiting
+Before istio 1.5, the recommended way to set up rate limiting in Istio was to use [mixer policy](https://istio.io/docs/tasks/policy-enforcement/rate-limiting/). In `version 1.5` the mixer policy is deprecated and not recommended for production, and the  preferred way is using [Envoy native rate limiting](https://www.envoyproxy.io/docs/envoy/v1.13.0/intro/arch_overview/other_features/global_rate_limiting) instead of mixer rate limiting. 
 There is no native support yet for rate limiting API with Istio. Thus, we'll be using the [Envoy rate limit service](https://github.com/envoyproxy/ratelimit), which is is a Go/gRPC service designed to enable generic rate limit scenarios from different types of applications.
 To mimic a real world example, we suppose that we have 2 plans: 
 + Basic: 5 requests pe minute
@@ -217,13 +218,14 @@ To mimic a real world example, we suppose that we have 2 plans:
 
 We configure Envoy rate limiting actions to look for `x-plan` and `x-account` in request headers. We also configure the descriptor match any request with the account and plan keys, such that (`'account', '<unique value>')`, `('plan', 'BASIC | PLUS')`. The `account` key doesn't specify any value, it uses each unique value passed into the rate limiting service to match. The `plan` descriptor key has two values specified and depending on which one matches (BASIC or PLUS) determines the rate limit, either 5 request per minute for `BASIC` or 20 requests per minute for `PLUS`.
 ```
-$ kubectl apply -f 4-policy/rate-limiting/rate-limit-service.yaml
-$ kubectl apply -f 4-policy/rate-limiting/rate-limit-envoy-filter.yaml 
+$ kubectl apply -f 4-policy/rate-limiting/global/rate-limit-service.yaml
+$ kubectl apply -f 4-policy/rate-limiting/global/rate-limit-envoy-filter.yaml 
 ``` 
 Testing the above scenarios prove that the rate limiting is working
 ```bash
 #### DEPLOY FORTIO
 $ kubectl apply -f 4-policy/fortio.yaml 
+$ export INGRESS_IP=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 $ FORTIO_POD=$(kubectl get pod -n sock-shop| grep fortio | awk '{ print $1 }')  
 ####  BASIC PLAN
 $ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 2 -loglevel Warning -H "x-plan: BASIC" -H "x-account: user" $INGRESS_IP/catalogue
@@ -242,8 +244,6 @@ Code 429 : 2 (50.0 %)
 Or you can use curl from your terminal:
 
 ```bash
-export INGRESS_IP=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-
 curl --request GET "http://${INGRESS_IP}/catalogue" -I --header 'x-plan: BASIC' --header 'x-account: user'
 
 curl --request GET "http://${INGRESS_IP}/catalogue" -I --header 'x-plan: PLUS' --header 'x-account: user'
@@ -261,9 +261,22 @@ redis-cli
 keys *
 
 ```
-
-
-#### 2. CORS
+#### Local rate limiting
+Envoy supports local rate limiting of L4 connections and HTTP requests. This allows  to apply rate limits at the instance level, in the proxy itself, without calling any other service.
+In this example, we are going to enable local rate limiting for any traffic through the `catalogues` service. The local rate limit filter’s token bucket is configured to allow 10 requests/min. The filter is also configured to add an x-local-rate-limit response header to requests that are blocked.
+```
+$ kubectl apply -f 4-policy/rate-limiting/local/rate-limit-envoy-filter.yaml 
+```
+Testing the above scenarios prove that local rate limiting is working
+```
+$ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 4 -qps 0 -n 20 -loglevel Warning http://catalogue/tags
+```
+you shouls ge the below results
+```
+Code 200 : 10 (50.0 %)
+Code 429 : 10 (50.0 %)
+```
+### 2. CORS
 Cross-Origin Resource Sharing (CORS) is a method of enforcing client-side access controls on resources by specifying external domains that are able to access certain or all routes of your domain. Browsers use the presence of HTTP headers to determine if a response from a different origin is allowed.
 
 For example, the following rule restricts cross origin requests to those originating from `aboullaite.me` domain using HTTP POST/GET, and sets the `Access-Control-Allow-Credentials` header to false. In addition, it only exposes `X-Foo-bar` header and sets an expiry period of 1 day.
@@ -288,7 +301,9 @@ content-length: 0
 ```bash
 $ kubectl apply -f 4-policy/cleanup-virtual-service.yaml
 $ kubectl delete -f 4-policy/fortio.yaml 
-$ kubectl delete -f 4-policy/rate-limiting/rate-limit-service.yaml
+$ kubectl delete -f 4-policy/rate-limiting/global/rate-limit-service.yaml
+$ kubectl delete -f 4-policy/rate-limiting/global/rate-limit-envoy-filter.yaml 
+$ kubectl delete -f 4-policy/rate-limiting/local/rate-limit-envoy-filter.yaml 
 ```
 
 ## 5. Security

@@ -1,28 +1,12 @@
 apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: front-end
-  namespace: sock-shop
-spec:
-  hosts:
-  - "*"
-  gateways:
-  - sockshop-gateway
-  http:
-  - route:
-    - destination:
-        host: front-end
-        subset: v1
----
-apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: front-end
+  name: catalogue
   namespace: sock-shop
 spec:
-  host: front-end
+  host: catalogue
   subsets:
   - name: v1
     labels:
       version: v1
-      name: front-end
+      name: catalogue
