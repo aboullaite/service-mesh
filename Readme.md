@@ -25,6 +25,8 @@ This demo is deployed and tested with `kubernetes 1.20` and `istio 1.11.3`
     - [5. Timeouts](#5-timeouts)
 - [4. Policy](#4-policy)
     - [1. Rate limiting](#1-rate-limiting)
+        - [Global rate limiting](#global-rate-limiting)
+        - [Local rate limiting](#local-rate-limiting)
     - [2. CORS](#2-cors)
 - [5. Security](#5-Security)
     - [1. mutual TLS authentication](#1-mutual-tls-authentication)
@@ -377,16 +379,21 @@ $ kubectl apply -f 5-security/mtls/destination-rule-tls.yml
 ## 6. Observability
 Insight is the number one reason why people deploy a service mesh. Not only do service meshes provide a level of immediate insight, but they also do so uniformly and ubiquitously. You might be accustomed to having individual monitoring solutions for distributed tracing, logging, security, access control, metering, and so on. Service meshes centralize and assist in consolidating these separate panes of glass by generating metrics, logs, and traces of requests transiting the mesh. 
 
-To generate some load for our application, we deploy a small load testing app that packages a test script for [Locust](https://locust.io/) and simulates user traffic to Sock Shop:
+To generate some load for our application, we are going to use Fortio to generate and simulates user traffic to Sock Shop:
 ```bash
-$ kubectl apply -f 6-observability/loadtest-dep.yaml
+$ kubectl apply -f 6-observability/fortio.yaml
 ```
 ### 1. Prometheus
 First, let's verify that the [prometheus](https://prometheus.io/) service is running in the cluster:
 ```bash
-$ kubectl -n istio-system get svc prometheus
+$ kubectl apply -f 6-observability/fortio.yaml
+$ INGRESS_IP=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+$ FORTIO_POD=$(kubectl get pod -n sock-shop| grep fortio | awk '{ print $1 }')
+$ while true; do kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -c 1 -qps 0 -n 10 -loglevel Warning $INGRESS_IP/catalogue; sleep 2s; done;
 ```
-You should see that its up and available on port 9090. Let's check it out by configuring port-forwarding:
+
+Now open a new terminal for the rest of this section and leave the above command generating some load for our app.
+You should see that its up and available on port 9090. If not you can quickly install it using `kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.11/samples/addons/prometheus.yaml`. Let's check it out by configuring port-forwarding:
 ```bash
 $ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=prometheus -o jsonpath='{.items[0].metadata.name}') 9090:9090 &
 ```
@@ -399,6 +406,8 @@ You can exit port-forwarding mode using `ctrl + c`
 [Grafana](https://grafana.com/) is mainly used to visualize the prometheus data. Similarly we verify that the service is running and use port-forwarding to visualize Grafana dashboard:
 ```bash
 $ kubectl -n istio-system get svc grafana
+## If not available install grafana using 
+## `kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.11/samples/addons/grafana.yaml`
 $ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=grafana -o jsonpath='{.items[0].metadata.name}') 3000:3000 &
 ```
 Then open `localhost:3000`, click on `Istio Mesh Dashboard`. This gives the global view of the Mesh along with services and workloads in the mesh. You can get more details about services and workloads by navigating to their specific dashboards.
@@ -413,8 +422,11 @@ Tracing allows you to granularly track request segments (spans) as the request i
 
 Istio-enabled applications can be configured to collect trace spans using, for instance, the popular [Jaeger](https://www.jaegertracing.io/) distributed tracing system. Distributed tracing lets you see the flow of requests a user makes through your system, and Istio's model allows this regardless of what language/framework/platform you use to build your application.
 
-Again, we configure port-forwarding using:
+Again, we follow the same steps of veriying and configure port-forwarding using:
 ```bash
+$ kubectl -n istio-system get svc tracing
+### Run this to install if not available
+### kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.11/samples/addons/jaeger.yaml
 $ kubectl port-forward -n istio-system $(kubectl get pod -n istio-system -l app=jaeger -o jsonpath='{.items[0].metadata.name}') 16686:16686 &
 ```
 From the left-hand pane of the dashboard, select any service from the Service drop-down list and click Find Traces:
@@ -429,6 +441,8 @@ Click on any trace to see details. The trace is comprised of a set of spans, whe
 First step, is to verify Kiali is running and port-forward to access kiali:
 ```bash
 $ kubectl -n istio-system get svc kiali
+### Run this to install if not available
+### kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.11/samples/addons/kiali.yaml
 $ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=kiali -o jsonpath='{.items[0].metadata.name}') 20001:20001
 ```
 Open kiali dashboard an login using `admin` as the username and password. you should the Overview page immediately after you log in. To view a namespace graph, click on the `sock-shop` graph icon in the Sock-Shop namespace card.
@@ -439,6 +453,11 @@ As you can see, the graph that Kiali generated is an excellent way to get a gene
 To examine the details about the Istio configuration, click on the Applications, Workloads, and Services menu icons on the left menu bar. The following screenshot shows the Sock-shop applications information:
 
 ![Applications](assets/kiali-apps.png)
+
+### 4. Clean up
+```bash
+$ kubectl delete -f 6-observability/fortio.yaml
+```
 
 --- 
 Ressources:
