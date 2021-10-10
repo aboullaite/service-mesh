@@ -1,7 +1,7 @@
 # Service Mesh Demo
 This repo contains demo for my talk about service meshes. It is based on [microservices-demo application](https://github.com/microservices-demo/microservices-demo) with some minor changes to make it play nicely with istio. 
 
-This demo is deployed and tested with `kubernetes 1.16` and `istio 1.5`
+This demo is deployed and tested with `kubernetes 1.20` and `istio 1.11.3`
 
 ![Sock Shop app](assets/sock-shop.png)
 ## Content
@@ -309,7 +309,7 @@ $ kubectl delete -f 4-policy/rate-limiting/local/rate-limit-envoy-filter.yaml
 ## 5. Security
 ### 1. mutual TLS authentication
 With all of the identity certificates (SVIDs) distributed to workloads across the system, how do we actually use them to verify the identity of the servers with which we’re communicating and perform authentication and authorization? This is where mTLS comes into play.
-mTLS is TLS in which both parties, client and server, present certificates to each other. This allows the client to verify the identity of the server, like normal TLS, but it also allows the server to verify the identity of the client attempting to establish the connection. 
+mTLS (mutual TLS) is TLS in which both parties, client and server, present certificates to each other. This allows the client to verify the identity of the server, like normal TLS, but it also allows the server to verify the identity of the client attempting to establish the connection. 
 In this example, we will migrate the existing Istio services traffic from plaintext to mutual TLS without breaking live traffic.
 
 Istio 1.5 brings the concept of PeerAuthentication, which is a CRD that allows us to enable and configure mTLS at both the cluster level and namespace level. First we start by enabling mTLS:
@@ -321,12 +321,13 @@ $ kubectl apply -f 5-security/mtls/destination-rule-tls.yml
 To confirm that plain-text requests fail as TLS is required to talk to any service in the mesh, we redeploy `fortlio` by disabling sidecare injection this time. and run some requests
 ```bash
 $ kubectl apply -f 5-security/fortio.yaml
+$ FORTIO_POD=$(kubectl get pod -n sock-shop| grep fortio | awk '{ print $1 }')  
 $ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -curl -k http://catalogue/tags  
 ```
 You should notice that fortio fails to make calls to `catalogue` service, and we get a `Connection reset by peer` which is what we expected.
 Now how do we get a successful connection? In order to have applications communicate over mutual TLS, they need to be on-boarded onto the mesh. Or we can disable mTLS for `catalogue` service
 ```bash
-$ kubectl apply -f 5-security/disable-mtls-catalogue.yaml
+$ kubectl apply -f 5-security/mtls/disable-mtls-catalogue.yaml
 $ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -curl -k http://catalogue/tags  
 ```
 You can see that the request was successful! But if you go to our app, you should notice that no catalogues are returned, we should re-enable mtls again in order to work:
@@ -338,12 +339,12 @@ $ kubectl apply -f 5-security/mtls/destination-rule-tls.yml
 Istio’s authorization features provide mesh-, namespace-, and workload-wide access control for your workloads in the mesh. 
 We'll start by creating a deny-all policy for the `/catalogue` path in the front-end service
 ```bash
-$ kubectl apply 5-security/http-auth/deny-policy.yaml   
+$ kubectl apply -f 5-security/http-auth/deny-policy.yaml   
 ```
 Point your browser at the app (`http://$$INGRESS_IP/catalogue`). You should see "RBAC: access denied". The error shows that the configured deny-all policy is working as intended.
 Let's fix this:
 ```bash
-$ kubectl apply 5-security/http-auth/allow-policy.yaml   
+$ kubectl apply -f 5-security/http-auth/allow-policy.yaml   
 ```
 Here we allow only `GET`  http method. If you try to call the link using a `POST` method for example, you should see "RBAC: access denied".
 ### 3. JWT
@@ -361,10 +362,16 @@ Verify that a request with a valid JWT is allowed:
 $ TOKEN=$(curl https://raw.githubusercontent.com/aboullaite/service-mesh/master/5-security/jwt/data.jwt -s)
 $ kubectl -n sock-shop exec -it $FORTIO_POD  -c fortio /usr/bin/fortio -- load -curl -H "Authorization: Bearer $TOKEN" http://catalogue/tags
 ```
-
+PS: If you get `connection reset by peer` error, that because of mtls. check (mtls)[(#1-mutual-tls-authentication)] section for details on how to disable mtls for the catalogue service and enable it back after the testing.
 ### 4. Clean up
 ```bash
-$ kubectl delete -f 5-security/jwt/jwt-request-auth.yaml  
+$ kubectl delete -f 5-security/jwt/jwt-request-auth.yaml
+$ kubectl apply -f 5-security/http-auth/allow-all.yaml
+$ kubectl delete -f 5-security/jwt/jwt-request-auth.yaml 
+$ kubectl apply -f 5-security/fortio.yaml
+## Making sure that mtls is configured for all services
+$ kubectl apply -f 5-security/mtls/peer-auth-mtls.yaml
+$ kubectl apply -f 5-security/mtls/destination-rule-tls.yml 
 ```
 
 ## 6. Observability
