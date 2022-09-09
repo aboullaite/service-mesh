@@ -379,6 +379,11 @@ $ kubectl apply -f 5-security/mtls/destination-rule-tls.yml
 ## 6. Observability
 Insight is the number one reason why people deploy a service mesh. Not only do service meshes provide a level of immediate insight, but they also do so uniformly and ubiquitously. You might be accustomed to having individual monitoring solutions for distributed tracing, logging, security, access control, metering, and so on. Service meshes centralize and assist in consolidating these separate panes of glass by generating metrics, logs, and traces of requests transiting the mesh. 
 
+Run the following command to install and configure necessary tools:
+```bash
+$ kubectl apply -f 6-observability/expose-dashboards
+```
+
 To generate some load for our application, we are going to use Fortio to generate and simulates user traffic to Sock Shop:
 ```bash
 $ kubectl apply -f 6-observability/fortio.yaml
